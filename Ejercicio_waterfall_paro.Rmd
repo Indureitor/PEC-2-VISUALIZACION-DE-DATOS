@@ -1,0 +1,45 @@
+---
+title: "waterfall_01"
+author: "DAVID DE VEGA MARTIN"
+date: "15/4/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# https://www.ine.es/prensa/epa_tabla.htm
+# https://www.r-bloggers.com/2010/05/ggplot2-waterfall-charts/
+
+# Cargamos el dataset
+```{r}
+if (!require('ggplot2')) install.packages('ggplot2')
+if (!require('waterfall')) install.packages('waterfall')
+if (!require('waterfallS')) install.packages('waterfallS')
+```
+
+
+```{r}
+balance <-read.csv("paro.csv",sep = ";")
+```
+
+# Seleccionamos los ejercicios a comparar.
+```{r}
+colnames(balance)[colnames(balance)=='ï..Trimestre'] <-'desc'
+balance$amount <- as.numeric(as.character(balance$amount))
+balance$desc <-as.factor(balance$desc)
+balance
+```
+
+```{r}
+balance = balance[c("desc","amount")]
+waterfall(balance, calc_total = TRUE)
+
+```
+
+# https://r-charts.com/flow/waterfall-chart/
+
+# https://www.r-bloggers.com/2010/05/ggplot2-waterfall-charts/
+
+# https://github.com/rtse999/WaterfallCharts/blob/master/waterfall.r
