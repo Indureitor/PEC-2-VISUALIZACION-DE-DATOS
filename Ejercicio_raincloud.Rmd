@@ -1,0 +1,141 @@
+---
+title: "PEC 2 VISUALIZACION DE DATOS"
+author: "DAVID DE VEGA MARTIN"
+date: "7/4/2022"
+output: html_document
+---
+
+# https://rdrr.io/rforge/Stat2Data/man/Hawks.html
+# https://www.cedricscherer.com/2021/06/06/visualizing-distributions-with-raincloud-plots-and-how-to-create-them-with-ggplot2/
+# https://www.r-bloggers.com/2021/07/ggdist-make-a-raincloud-plot-to-visualize-distribution-in-ggplot2/```{r setup, include=FALSE}
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r message= FALSE, warning=FALSE}
+if (!require('Stat2Data')) install.packages('Stat2Data') #### <--------- libreria que contiene el dataset.
+if (!require('cluster')) install.packages('cluster')
+if (!require('ggplot2')) install.packages('ggplot')
+if (!require('ggpubr')) install.packages('ggpubr')
+if (!require('ggdist')) install.packages('ggdist')
+if (!require('dbscan')) install.packages('dbscan')
+if (!require('tidyquant')) install.packages('tidyquant')
+library(tidyverse)
+library(Stat2Data)
+
+```
+
+# Cargamos el dataset.
+```{r}
+data("Hawks")
+```
+
+# Seleccionamos las variables.
+```{r}
+Hawks = Hawks[,c('Species','Age','Wing','Weight','Culmen','Hallux')]
+```
+
+# Tratamiento de outliers 
+
+
+```{r message= FALSE, warning=FALSE}
+mean_wing <-aggregate(x = Hawks$Wing,                
+                        by = list(Hawks$Species),           
+                        FUN = mean,na.action = na.omit) 
+
+mean_wing_rt <-round(mean_wing$x[mean_wing$Group.1 == "RT"],2)
+mean_wing_ch <-round(mean_wing$x[mean_wing$Group.1 == "CH"],2)
+mean_wing_ss <-round(mean_wing$x[mean_wing$Group.1 == "SS"],2)
+
+
+# Cooper Hawk
+
+Hawks['Wing'][Hawks['Species']=='CH' & Hawks['Wing'] <=210] <- mean_wing_ch
+Hawks['Wing'][Hawks['Species']=='CH' & Hawks['Wing'] >=270] <- mean_wing_ch
+
+# Red Tail
+
+Hawks['Wing'][Hawks['Species']=='RT' & Hawks['Wing'] >=430] <- mean_wing_rt
+Hawks['Wing'][Hawks['Species']=='RT' & Hawks['Wing'] <=350] <- mean_wing_rt
+
+# Sharp Sinned ---> NO OUTLIERS
+Hawks['Wing'][Hawks['Species']=='SS' & Hawks['Wing'] >=230] <- mean_wing_ss
+```
+
+
+# Rain Cloud Plot
+
+```{r message= FALSE, warning=FALSE}
+ggplot(Hawks, aes(x = Species, y = Wing,fill= factor(Species))) + 
+  ggdist::stat_halfeye(
+    adjust = .5, 
+    width = .6, 
+    .width = 0, 
+    justification = -.2, 
+    point_colour = NA
+  ) + 
+  geom_boxplot(
+    width = .15, 
+    outlier.shape = NA
+  ) +
+  ## add justified jitter from the {gghalves} package
+  gghalves::geom_half_point(
+    ## draw jitter on the left
+    side = "l", 
+    ## control range of jitter
+    range_scale = .4, 
+    ## add some transparency
+    alpha = .3
+  ) +
+  # Adjust theme
+   scale_fill_tq()+
+   theme_tq()+
+   labs(
+   title = "Raincloud Plot: Hawks Dataset",
+   x= "Species",
+   y= "Wing",
+   fill = "Species"
+   )+
+  coord_flip()
+  coord_cartesian(xlim = c(1.2, NA), clip = "off")
+```
+
+
+# Boxplot + ViolinPlot
+
+
+
+```{r message= FALSE, warning=FALSE}
+
+
+violin_plot <-ggplot(Hawks, aes(y = Species, x = Wing,fill= factor(Species))) 
+
+violin_plot <- violin_plot + geom_violin()
+
+bar_plot <-ggplot(Hawks, aes(y = Species, x = Wing,fill= factor(Species))) + 
+              geom_boxplot() +
+              ## use either geom_point() or geom_jitter()
+              geom_point(
+                ## draw bigger points
+                size = 2,
+                ## add some transparency
+                alpha = .3,
+                ## add some jittering
+                position = position_jitter(
+                  ## control randomness and range of jitter
+                  seed = 1, width = .2
+                )
+             )
+
+
+ggarrange(violin_plot,bar_plot  ,labels = c("A","B"),ncol = 1, nrow = 2)
+
+```
+
+
+
+
+
+
+
+
